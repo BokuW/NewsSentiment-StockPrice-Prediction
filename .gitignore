@@ -13,7 +13,10 @@ venv/
 .vscode/
 .idea/
 
-data/ # Data files 
+#Data files
+data/ # Main data directory
+data/yfinance/ # Raw data files from Yahoo Finance
+data/raw_analyst_ratings/ # Raw analyst ratings data
 data/processed/ # Processed data files
 
 # .gitignore
