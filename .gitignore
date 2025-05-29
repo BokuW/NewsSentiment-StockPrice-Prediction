@@ -14,3 +14,9 @@ venv/
 .idea/
 
 data/ # Data files 
+data/processed/ # Processed data files
+
+# .gitignore
+*.log
+*.env
+build/
