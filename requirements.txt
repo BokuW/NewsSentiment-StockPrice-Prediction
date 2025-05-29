@@ -13,3 +13,4 @@ spacy
 yfinance
 pynance
 talib
+# Installing the TA-Lib library was really tricky.
