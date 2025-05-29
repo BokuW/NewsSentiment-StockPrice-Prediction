@@ -9,6 +9,7 @@ pytest
 nltk
 textblob
 spacy
-talib
+# For financial data analysis
+yfinance
 pynance
-
+talib
