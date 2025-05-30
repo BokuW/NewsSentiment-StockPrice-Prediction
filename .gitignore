@@ -28,3 +28,7 @@ data/processed/
 *.log
 *.env
 build/
+
+# Ignore TA-Lib Windows wheel file
+ta_lib-0.6.3-cp310-cp310-win_amd64.whl
+*.whl
