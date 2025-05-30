@@ -14,10 +14,15 @@ venv/
 .idea/
 
 #Data files
-data/ # Main data directory
-data/yfinance/ # Raw data files from Yahoo Finance
-data/raw_analyst_ratings/ # Raw analyst ratings data
-data/processed/ # Processed data files
+# Main data directory
+data/
+*.csv
+# Raw data files from Yahoo Finance
+data/yfinance/
+# Raw analyst ratings data
+data/raw_analyst_ratings/ 
+# Processed data files
+data/processed/ 
 
 # .gitignore
 *.log
