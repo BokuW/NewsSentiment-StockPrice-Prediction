@@ -13,4 +13,22 @@ venv/
 .vscode/
 .idea/
 
-data/ # Data files 
+#Data files
+# Main data directory
+data/
+*.csv
+# Raw data files from Yahoo Finance
+data/yfinance/
+# Raw analyst ratings data
+data/raw_analyst_ratings/ 
+# Processed data files
+data/processed/ 
+
+# .gitignore
+*.log
+*.env
+build/
+
+# Ignore TA-Lib Windows wheel file
+ta_lib-0.6.3-cp310-cp310-win_amd64.whl
+*.whl

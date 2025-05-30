@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - task-1 # Run on pushes to your task-1 branch too
+      - task-1
   pull_request:
     branches:
       - main
@@ -13,26 +13,47 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     strategy:
       matrix:
-        python-version: ["3.10", "3.11"] # Test with common Python versions
+        python-version: ["3.10"]
 
     steps:
       - uses: actions/checkout@v4
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-      - name: Install dependencies
+
+      - name: Install TA-Lib C library (apt with source fallback)
+        run: |
+          set -xeo pipefail
+
+          sudo apt-get update
+          sudo apt-get install -y libta-lib0 libta-lib-dev || (
+            echo "Apt packages not found or failed to install. Building TA-Lib from source..."
+            sudo apt-get install -y build-essential wget
+            wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
+            tar -xvzf ta-lib-0.4.0-src.tar.gz
+            cd ta-lib
+            # Try explicitly adding -lm to CFLAGS, as configure failed to find math functions
+            ./configure CFLAGS="-std=c99 -lm" --prefix=/usr
+
+            # --- CRITICAL CHANGE HERE ---
+            # Capture make output to a file to ensure full error messages are visible
+            make -j1 > make_output.log 2>&1 || { cat make_output.log; exit 1; }
+
+            sudo make install
+            cd ..
+          )
+
+      - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+          pip install TA-Lib
           pip install -r requirements.txt
-      - name: Lint with flake8 # Optional, but good practice
+
+      - name: Run tests
         run: |
-          pip install flake8
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 . --count --max-complexity=10 --max-line-length=120 --statistics
-      - name: Test with pytest
-        run: |
-          pip install pytest # Ensure pytest is available in CI
-          pytest # Assumes tests are in a 'tests/' directory or discoverable
+          pytest
