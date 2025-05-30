@@ -1,16 +1,11 @@
 pandas
-numpy
-scikit-learn
 matplotlib
 seaborn
-jupyterlab 
-pytest
-# For NLP
-nltk
+numpy
+scikit-learn
 textblob
-spacy
-# For financial data analysis
+nltk
+jupyterlab
 yfinance
-pynance
-talib
-# Installing the TA-Lib library was really tricky.
+TA-Lib
+PyNance

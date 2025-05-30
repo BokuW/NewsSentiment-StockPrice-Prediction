@@ -5,7 +5,7 @@ on:
   push:
     branches:
       - main
-      - task-1 
+      - task-1
   pull_request:
     branches:
       - main
@@ -15,36 +15,53 @@ jobs:
     runs-on: ubuntu-latest
 
     strategy:
+      # Adjusted for better compatibility with TA-Lib Python bindings.
+      # Python 3.10 is often more stable for TA-Lib.
       matrix:
-        python-version: ["3.10", "3.11"]
+        python-version: ["3.10"] # Focus on 3.10 for now
 
     steps:
-      - uses: actions/checkout@v4 
-      - name: Set up Python ${{ matrix.python-version }} 
-        uses: actions/setup-python@v5 
-        with:
-          python-version: ${{ matrix.python-version }} 
+      - uses: actions/checkout@v4
 
-      - name: Install TA-Lib system dependencies (try apt, fall back to source)
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install TA-Lib C library (apt with source fallback)
         run: |
+          set -xeo pipefail # Added for debugging - will exit immediately on error and print commands
+
+          # Try installing via apt-get first
           sudo apt-get update
           sudo apt-get install -y libta-lib0 libta-lib-dev || (
-            echo "Apt packages not found, building TA-Lib from source..."
+            echo "Apt packages not found or failed to install. Building TA-Lib from source..."
+
+            # Install necessary build tools (like make, gcc) and wget for source compilation
             sudo apt-get install -y build-essential wget
+
+            # Download, extract, configure, build, and install TA-Lib C library
             wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
             tar -xvzf ta-lib-0.4.0-src.tar.gz
             cd ta-lib
             ./configure --prefix=/usr
-            make
+            make -j$(nproc) # Use all available cores for faster compilation
             sudo make install
-            cd ..
+            cd .. # Go back to the root of the repository
           )
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
+
+          # Explicitly install TA-Lib Python bindings *before* other requirements.
+          # This can sometimes resolve specific build issues or compatibility problems.
+          pip install TA-Lib # Use the capitalized package name, 'TA-Lib'
+
+          # Install the rest of the requirements from requirements.txt
           pip install -r requirements.txt
-          # python -m spacy download en_core_web_sm # Uncomment if needed
+
+          # python -m spacy download en_core_web_sm # Uncomment if needed for your project
 
       - name: Run tests
         run: |
