@@ -37,11 +37,12 @@ jobs:
             wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
             tar -xvzf ta-lib-0.4.0-src.tar.gz
             cd ta-lib
-            ./configure CFLAGS="-std=c99" --prefix=/usr
+            # Try explicitly adding -lm to CFLAGS, as configure failed to find math functions
+            ./configure CFLAGS="-std=c99 -lm" --prefix=/usr
 
             # --- CRITICAL CHANGE HERE ---
-            # Compiling with -j1 to ensure full error messages are visible
-            make -j1 # <--- CHANGED FROM -j$(nproc) TO -j1
+            # Capture make output to a file to ensure full error messages are visible
+            make -j1 > make_output.log 2>&1 || { cat make_output.log; exit 1; }
 
             sudo make install
             cd ..
