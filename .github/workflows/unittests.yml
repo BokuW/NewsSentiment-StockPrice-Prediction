@@ -12,77 +12,90 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Specifies the environment to run the job on
 
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.10"] # Defines the Python version(s) to test against
 
     steps:
+      # Step 1: Checkout the repository code
       - uses: actions/checkout@v4
 
+      # Step 2: Set up the specified Python version
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
+      # Step 3: Install the TA-Lib C library
+      # This step attempts to install TA-Lib via apt-get first.
+      # If apt-get fails (common for TA-Lib on some Ubuntu versions),
+      # it falls back to downloading, compiling, and installing from source.
       - name: Install TA-Lib C library (apt with source fallback)
         run: |
           set -xeo pipefail # Exit immediately if a command exits with a non-zero status. Print commands and their arguments as they are executed.
 
-          sudo apt-get update # Update package lists
-          
-          # Attempt to install TA-Lib development packages via apt-get first.
-          # If this fails (due to packages not being found, common on newer Ubuntu versions),
-          # then fall back to building from source.
+          sudo apt-get update # Update package lists to ensure latest information
+
+          # Attempt to install TA-Lib development packages via apt-get.
+          # The '||' operator means if the first command fails, execute the second.
           if ! sudo apt-get install -y libta-lib0 libta-lib-dev; then
             echo "Apt packages not found or failed to install. Building TA-Lib from source..."
-            
-            # Install necessary build tools for compiling from source
-            sudo apt-get install -y build-essential wget
-            
-            # Download TA-Lib source code
+
+            # Install additional dependencies required for compiling C/C++ projects
+            # autoconf, automake, libtool are often needed for './configure' scripts
+            sudo apt-get install -y build-essential wget gcc g++ make autoconf automake libtool
+
+            # Download TA-Lib source code from SourceForge
             wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-            
-            # Extract the source code
+
+            # Extract the downloaded tar.gz archive
             tar -xvzf ta-lib-0.4.0-src.tar.gz
-            
-            # Navigate into the extracted directory
+
+            # Navigate into the extracted TA-Lib source directory
             cd ta-lib
-            
-            # Configure the build.
-            # CFLAGS="-std=c99 -lm" forces C99 standard and links the math library,
-            # which helps with compatibility on modern GCC compilers.
-            # --prefix=/usr installs to standard system locations.
+
+            # Configure the build process.
+            # CFLAGS="-std=c99 -lm": Sets C compiler flags.
+            #   -std=c99: Forces compliance with the C99 standard.
+            #   -lm: Explicitly links against the math library (libm),
+            #        which is necessary for functions like 'pow' and 'floor'
+            #        that TA-Lib uses, and which 'configure' previously indicated
+            #        it couldn't find without explicit linking.
+            # --prefix=/usr: Specifies the installation directory for the compiled library
+            #                to be a standard system-wide location.
             ./configure CFLAGS="-std=c99 -lm" --prefix=/usr
-            
-            # Compile the TA-Lib C library using all available processor cores.
-            # This was changed back from -j1 (which was for debugging truncated logs)
-            # to -j$(nproc) for faster compilation in CI.
-            make -j$(nproc) 
-            
+
+            # Compile the TA-Lib C library.
+            # -j$(nproc): Uses all available CPU cores for parallel compilation, speeding up the process.
+            make -j$(nproc)
+
             # Install the compiled TA-Lib C library to the system.
             sudo make install
-            
-            # Update the dynamic linker run-time bindings.
-            # THIS IS THE CRUCIAL FIX for 'cannot find -lta-lib' error.
-            # It ensures that the Python TA-Lib binding can find the newly installed C library.
-            sudo ldconfig 
-            
-            # Navigate back to the root of the repository
+
+            # Update the dynamic linker run-time bindings cache.
+            # This is CRUCIAL. It tells the system where to find the newly installed
+            # shared library (libta-lib.so), allowing the Python TA-Lib binding
+            # to link against it successfully during its own installation.
+            sudo ldconfig
+
+            # Navigate back to the root of the repository to continue with Python dependencies
             cd ..
           fi
 
+      # Step 4: Install Python dependencies from requirements.txt
       - name: Install Python dependencies
         run: |
-          # Upgrade pip to the latest version
+          # Upgrade pip to the latest version to ensure best compatibility and features
           python -m pip install --upgrade pip
           
-          # Install all Python dependencies listed in requirements.txt.
-          # This includes the Python TA-Lib binding which will now find the C library.
+          # Install all Python packages listed in requirements.txt.
+          # The Python TA-Lib binding (if listed in requirements.txt) will now
+          # successfully find and link against the C library installed in the previous step.
           pip install -r requirements.txt
 
+      # Step 5: Run project tests (e.g., unit tests, integration tests)
       - name: Run tests
         run: |
-          # Execute your project's tests
-          pytest
+          pytest # Assumes pytest is installed via requirements.txt and tests are configured
