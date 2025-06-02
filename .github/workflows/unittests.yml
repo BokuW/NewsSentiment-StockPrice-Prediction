@@ -12,48 +12,76 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-latest # Specifies the operating system for the runner
 
     strategy:
       matrix:
-        python-version: ["3.10"]
+        python-version: ["3.10"] # Defines the Python version(s) to test against
 
     steps:
+      # Step 1: Checkout the repository code
       - uses: actions/checkout@v4
 
+      # Step 2: Set up the specified Python version
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Install TA-Lib C library (apt with source fallback)
+      # Step 3: Install the TA-Lib C library from source
+      # This step is crucial because the Python TA-Lib binding (if building from source)
+      # needs the underlying C library's headers and compiled files to be present on the system.
+      - name: Install TA-Lib C library (source build)
         run: |
-          set -xeo pipefail
+          set -xeo pipefail # Exit immediately if any command fails. Print commands as they are executed.
 
-          sudo apt-get update
-          sudo apt-get install -y libta-lib0 libta-lib-dev || (
-            echo "Apt packages not found or failed to install. Building TA-Lib from source..."
-            sudo apt-get install -y build-essential wget
-            wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
-            tar -xvzf ta-lib-0.4.0-src.tar.gz
-            cd ta-lib
-            # Try explicitly adding -lm to CFLAGS, as configure failed to find math functions
-            ./configure CFLAGS="-std=c99 -lm" --prefix=/usr
+          sudo apt-get update # Update package lists
+          
+          # Install all necessary build tools and dependencies for TA-Lib C library compilation
+          sudo apt-get install -y build-essential wget gcc g++ make autoconf automake libtool
 
-            # --- CRITICAL CHANGE HERE ---
-            # Capture make output to a file to ensure full error messages are visible
-            make -j1 > make_output.log 2>&1 || { cat make_output.log; exit 1; }
+          # Download TA-Lib source code
+          wget http://prdownloads.sourceforge.net/ta-lib/ta-lib-0.4.0-src.tar.gz
 
-            sudo make install
-            cd ..
-          )
+          # Extract the source code
+          tar -xvzf ta-lib-0.4.0-src.tar.gz
 
+          # Navigate into the extracted directory
+          cd ta-lib
+
+          # Configure the build process with explicit CFLAGS and installation prefix.
+          # CFLAGS="-std=c99 -lm": Ensures compliance with C99 and links the math library.
+          # --prefix=/usr: Installs the library and headers to standard system-wide locations
+          #                (/usr/lib for libraries, /usr/include/ta-lib for headers).
+          ./configure CFLAGS="-std=c99 -lm" --prefix=/usr
+
+          # Compile the TA-Lib C library using all available processor cores
+          make -j$(nproc)
+
+          # Install the compiled TA-Lib C library to the system
+          sudo make install
+
+          # Update the dynamic linker run-time bindings cache.
+          # This tells the system where to find the newly installed shared library.
+          sudo ldconfig
+
+          # Navigate back to the root of the repository
+          cd ..
+      
+      # Step 4: Install Python dependencies
+      # The Python TA-Lib binding (from requirements.txt) should now find the C library.
       - name: Install Python dependencies
         run: |
+          set -xeo pipefail
+          # Upgrade pip to the latest version
           python -m pip install --upgrade pip
-          pip install TA-Lib
+          
+          # Install all Python dependencies listed in requirements.txt.
+          # This will include the Python TA-Lib binding, which should now successfully
+          # build against the C library installed in the previous step.
           pip install -r requirements.txt
 
+      # Step 5: Run project tests
       - name: Run tests
         run: |
-          pytest
+          pytest # Execute your project's tests (assuming pytest is in requirements.txt)
