@@ -1,14 +1,11 @@
 pandas
-numpy
-scikit-learn
 matplotlib
 seaborn
-jupyterlab 
-pytest
-# For NLP
-nltk
+numpy
+scikit-learn
 textblob
-spacy
-talib
-pynance
-
+nltk
+jupyterlab
+yfinance
+TA-Lib
+PyNance
