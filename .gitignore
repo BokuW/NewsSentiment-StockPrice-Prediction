@@ -1,34 +1,31 @@
-# Python
+# Environment
+.venv/
+
+# Python artifacts
 __pycache__/
 *.pyc
-.venv/
-venv/
-*.env
 
-# Jupyter Notebook
-.ipynb_checkpoints/
-*.ipynb-filter
-
-# IDEs
-.vscode/
-.idea/
-
-#Data files
-# Main data directory
-data/
-*.csv
-# Raw data files from Yahoo Finance
-data/yfinance/
-# Raw analyst ratings data
-data/raw_analyst_ratings/ 
-# Processed data files
-data/processed/ 
-
-# .gitignore
+# Logs
 *.log
-*.env
-build/
 
-# Ignore TA-Lib Windows wheel file
-ta_lib-0.6.3-cp310-cp310-win_amd64.whl
-*.whl
+# IDE/Editor specific files
+.ipynb_checkpoints/
+.vscode/
+
+# Generated/Temporary Data files
+# If 'processed' and 'raw' contain generated files, ignore them
+data/processed/
+data/raw/
+
+# Ignore specific processed data files
+data/raw_analyst_ratings/
+data/
+**.csv
+
+# Ignore specific downloaded TA-Lib wheel (if it's in your project root)
+ta_lib-0.6.9-cp310-cp310-win_amd64.whl
+**.whl
+
+
+# If you want to ignore *all* CSV files in the data directory recursively:
+# data/**/*.csv
