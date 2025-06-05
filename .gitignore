@@ -18,7 +18,7 @@ data/processed/
 data/raw/
 
 # Ignore specific processed data files
-data/raw_analyst_ratings/
+
 
 # Ignore specific downloaded TA-Lib wheel (if it's in your project root)
 ta_lib-0.6.9-cp310-cp310-win_amd64.whl
